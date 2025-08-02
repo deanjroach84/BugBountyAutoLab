@@ -1,0 +1,145 @@
+<!DOCTYPE html><html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Recon Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            lab: {
+              primary: '#0ea5e9',
+              secondary: '#1e293b',
+              accent: '#facc15',
+              bg: '#0f172a',
+              surface: '#1e293b',
+              text: '#e2e8f0',
+              muted: '#64748b'
+            },
+            severity: {
+              low: '#22c55e',
+              medium: '#eab308',
+              high: '#ef4444'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-100 dark:bg-lab.bg text-gray-800 dark:text-lab.text min-h-screen transition-colors duration-300">
+  <div id="app" class="max-w-7xl mx-auto py-8 px-4">
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg opacity-0 transition-opacity duration-500 z-50">
+      ✅ Finding submitted successfully!
+    </div><!-- Header -->
+<div class="flex justify-between items-center mb-8">
+  <h1 class="text-3xl font-bold tracking-tight text-lab.primary">🛡️ Recon Dashboard</h1>
+  <div class="flex items-center space-x-4">
+    <button onclick="toggleDarkMode()" class="px-4 py-2 bg-gray-300 dark:bg-lab.surface text-sm rounded hover:opacity-90 transition">
+      Toggle Theme
+    </button>
+    <a href="/logout" class="text-red-600 dark:text-red-400 hover:underline text-sm">Logout</a>
+  </div>
+</div>
+
+<!-- Upload Section (optional) -->
+<div class="mb-8">
+  <h2 class="text-xl font-semibold mb-4 text-lab.accent">Add New Finding</h2>
+  <form id="findingForm" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+    <input name="program" placeholder="Program" class="p-3 rounded bg-gray-50 dark:bg-lab.surface border border-gray-300 dark:border-gray-700 w-full" required>
+    <input name="target" placeholder="Target" class="p-3 rounded bg-gray-50 dark:bg-lab.surface border border-gray-300 dark:border-gray-700 w-full" required>
+    <input name="tool" placeholder="Tool Used" class="p-3 rounded bg-gray-50 dark:bg-lab.surface border border-gray-300 dark:border-gray-700 w-full" required>
+    <select name="severity" class="p-3 rounded bg-gray-50 dark:bg-lab.surface border border-gray-300 dark:border-gray-700 w-full">
+      <option>Low</option>
+      <option>Medium</option>
+      <option>High</option>
+    </select>
+    <input name="description" placeholder="Description" class="md:col-span-2 p-3 rounded bg-gray-50 dark:bg-lab.surface border border-gray-300 dark:border-gray-700 w-full" required>
+    <button type="submit" class="md:col-span-2 bg-lab.primary hover:bg-blue-700 text-white py-3 rounded w-full">Submit</button>
+  </form>
+</div>
+
+<!-- Table Section -->
+<div class="overflow-x-auto rounded-lg shadow">
+  <table class="min-w-full table-auto text-sm">
+    <thead class="bg-gray-200 dark:bg-lab.surface text-gray-800 dark:text-lab.text">
+      <tr>
+        <th class="py-3 px-4 text-left">Program</th>
+        <th class="py-3 px-4 text-left">Target</th>
+        <th class="py-3 px-4 text-left">Tool</th>
+        <th class="py-3 px-4 text-left">Severity</th>
+        <th class="py-3 px-4 text-left">Description</th>
+      </tr>
+    </thead>
+    <tbody id="results" class="bg-white dark:bg-lab.bg text-gray-800 dark:text-lab.text">
+      <!-- Rows will be injected by JS -->
+    </tbody>
+  </table>
+</div>
+
+  </div>  <script>
+    if (localStorage.getItem("theme") === "dark") {
+      document.documentElement.classList.add("dark");
+    }
+
+    function toggleDarkMode() {
+      document.documentElement.classList.toggle("dark");
+      const isDark = document.documentElement.classList.contains("dark");
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+    }
+
+    function getSeverityClass(level) {
+      const base = "px-2 py-1 rounded text-white text-xs font-semibold";
+      if (level.toLowerCase() === "low") return base + " bg-severity-low";
+      if (level.toLowerCase() === "medium") return base + " bg-severity-medium";
+      if (level.toLowerCase() === "high") return base + " bg-severity-high";
+      return base + " bg-gray-400";
+    }
+
+    function showToast() {
+      const toast = document.getElementById("toast");
+      toast.classList.remove("opacity-0");
+      toast.classList.add("opacity-100");
+      setTimeout(() => {
+        toast.classList.remove("opacity-100");
+        toast.classList.add("opacity-0");
+      }, 3000);
+    }
+
+    async function loadFindings() {
+      const res = await fetch("/api/findings");
+      const data = await res.json();
+      const out = data.map(f => `
+        <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-lab.surface">
+          <td class="py-2 px-4">${f[1]}</td>
+          <td class="py-2 px-4">${f[2]}</td>
+          <td class="py-2 px-4">${f[3]}</td>
+          <td class="py-2 px-4"><span class="${getSeverityClass(f[4])}">${f[4]}</span></td>
+          <td class="py-2 px-4">${f[5]}</td>
+        </tr>
+      `).join("");
+      document.getElementById("results").innerHTML = out;
+    }
+
+    document.getElementById("findingForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const data = Object.fromEntries(new FormData(form).entries());
+
+      await fetch("/api/findings", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      form.reset();
+      showToast();
+      loadFindings();
+    });
+
+    loadFindings();
+  </script></body>
+</html>
