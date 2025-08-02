@@ -25,16 +25,87 @@ def init_db():
 def index():
     if not session.get("logged_in"):
         return redirect('/login')
+
     conn = sqlite3.connect('recon.db')
     cur = conn.cursor()
     cur.execute("SELECT * FROM findings")
     findings = cur.fetchall()
     conn.close()
-    
-    render_template("dashboard.html", findings=findings)
-    
+
+    return render_template("dashboard.html", findings=findings)
 
 @app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == "POST":
+        if request.form["password"] == "hunter2":
+            session["logged_in"] = True
+            return redirect('/')
+        return "Wrong password"
+    return render_template("login.html")
+
+@app.route('/logout')
+def logout():
+    session["logged_in"] = False
+    return redirect('/login')
+
+@app.route('/api/findings', methods=["GET", "POST"])
+def findings():
+    conn = sqlite3.connect('recon.db')
+    cur = conn.cursor()
+    if request.method == "POST":
+        data = request.json
+        cur.execute("INSERT INTO findings (program, target, tool, severity, description) VALUES (?, ?, ?, ?, ?)", 
+                    (data['program'], data['target'], data['tool'], data['severity'], data['description']))
+        conn.commit()
+    cur.execute("SELECT * FROM findings")
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify(rows)
+
+@app.route('/scan', methods=["POST"])
+def scan():
+    if not session.get("logged_in"):
+        return redirect('/login')
+
+    domain = request.form.get("domain")
+    if not domain:
+        return "No domain provided", 400
+
+    try:
+        # Get the absolute path to the script
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(BASE_DIR, "../bugbounty-auto.sh")
+
+        # Run the script with the domain
+        subprocess.run(["bash", script_path, domain], check=True)
+        insert_nuclei_results(domain)
+        return redirect('/')
+    except Exception as e:
+        return f"Error running scan: {e}", 500
+
+def insert_nuclei_results(domain):
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    filepath = os.path.join(BASE_DIR, f"../recon/{domain}/nuclei_results.txt")
+
+    if not os.path.exists(filepath):
+        return
+
+    with open(filepath, "r") as file:
+        lines = file.readlines()
+
+    conn = sqlite3.connect('recon.db')
+    cur = conn.cursor()
+
+    for line in lines:
+        cur.execute("INSERT INTO findings (program, target, tool, severity, description) VALUES (?, ?, ?, ?, ?)", 
+                    ("CustomScan", domain, "nuclei", "medium", line.strip()))
+    
+    conn.commit()
+    conn.close()
+
+if __name__ == "__main__":
+    init_db()
+    app.run(host="0.0.0.0", port=5000)@app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == "POST":
         if request.form["password"] == "hunter2":
