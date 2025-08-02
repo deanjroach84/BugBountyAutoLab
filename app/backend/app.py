@@ -71,6 +71,26 @@ def scan():
     except Exception as e:
         return f"Error running scan: {e}", 500
 
+
+def insert_nuclei_results(domain):
+    filepath = f"recon/{domain}/nuclei_results.txt"
+    if not os.path.exists(filepath):
+        return
+
+    with open(filepath, "r") as file:
+        lines = file.readlines()
+
+    conn = sqlite3.connect('recon.db')
+    cur = conn.cursor()
+
+    for line in lines:
+        cur.execute("INSERT INTO findings (program, target, tool, severity, description) VALUES (?, ?, ?, ?, ?)", 
+                    ("CustomScan", domain, "nuclei", "medium", line.strip()))
+    
+    conn.commit()
+    conn.close()
+
+
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=5000)
