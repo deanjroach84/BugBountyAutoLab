@@ -26,7 +26,7 @@ WORKDIR /app
 COPY ./app /app
 
 # Install Python backend dependencies
-RUN pip3 install -r backend/requirements.txt
+RUN pip3 install --break-system-packages -r backend/requirements.txt
 
 # Expose dashboard port
 EXPOSE 5000
