@@ -66,7 +66,8 @@ def scan():
 
     try:
         # Run script with domain
-        subprocess.Popen(["bash", "../bugbounty-auto.sh", domain])
+        subprocess.run(["bash", "../bugbounty-auto.sh", domain])
+        insert_nuclei_results(domain)
         return redirect('/')
     except Exception as e:
         return f"Error running scan: {e}", 500
