@@ -24,7 +24,7 @@ def init_db():
 def index():
     if not session.get("logged_in"):
         return redirect('/login')
-    return render_template("dashboard.html")
+    return render_template("app/frontend/templates/dashboard.html")
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -33,7 +33,7 @@ def login():
             session["logged_in"] = True
             return redirect('/')
         return "Wrong password"
-    return render_template("login.html")
+    return render_template("app/frontend/templates/login.html")
 
 @app.route('/logout')
 def logout():
