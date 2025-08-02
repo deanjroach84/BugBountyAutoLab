@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template, redirect, session
 import os
 import sqlite3
+import subprocess
 
 app = Flask(__name__)
 app.secret_key = "supersecretpassword"
@@ -54,6 +55,23 @@ def findings():
     conn.close()
     return jsonify(rows)
 
+@app.route('/scan', methods=["POST"])
+def scan():
+    if not session.get("logged_in"):
+        return redirect('/login')
+
+    domain = request.form.get("domain")
+    if not domain:
+        return "No domain provided", 400
+
+    try:
+        # Run script with domain
+        subprocess.Popen(["bash", "../bugbounty-auto.sh", domain])
+        return redirect('/')
+    except Exception as e:
+        return f"Error running scan: {e}", 500
+
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=5000)
+
