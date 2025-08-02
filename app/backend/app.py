@@ -25,7 +25,14 @@ def init_db():
 def index():
     if not session.get("logged_in"):
         return redirect('/login')
-    return render_template("dashboard.html")
+    conn = sqlite3.connect('recon.db')
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM findings")
+    findings = cur.fetchall()
+    conn.close()
+    
+    render_template("dashboard.html", findings=findings)
+    
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
