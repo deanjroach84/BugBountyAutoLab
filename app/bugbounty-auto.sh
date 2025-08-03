@@ -5,7 +5,7 @@
 # -------------------- Tool Check & Auto-Install --------------------
 required_tools=(
     amass sublist3r assetfinder httpx whatweb wafw00f nuclei
-    ffuf gospider waybackurls gau dalfox sqlmap nmap nikto gobuster
+    ffuf gospider waybackurls gau dalfox sqlmap nmap nikto gobuster grc
 )
 
 check_and_install_tools() {
@@ -41,6 +41,9 @@ check_and_install_tools() {
                     ;;
                 dalfox)
                     go install github.com/hahwul/dalfox/v2@latest
+                    ;;
+                grc)
+                    sudo apt install -y grc
                     ;;
                 *)
                     echo "[!] No install routine defined for $tool. Please install manually."
