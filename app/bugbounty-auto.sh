@@ -95,7 +95,7 @@ while read -r raw_host; do
     fi
 
     echo "[*] Scanning $url ($clean_host) with Nmap vuln scripts..."
-    sudo nmap -p- -sV -T4 -Pn --script vuln -oN "nmap_${clean_host}.txt" "$clean_host"
+    sudo nmap -p- -sV -T4 -Pn -oN "nmap_${clean_host}.txt" "$clean_host"
 done < live_hosts.txt
 
 # 12. Nikto + Gobuster
